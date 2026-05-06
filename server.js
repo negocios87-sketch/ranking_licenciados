@@ -77,8 +77,8 @@ function findMeta(rows, pipeName, targetYM) {
   const find     = (...terms) => keys.find(k => terms.some(t => k.toLowerCase().includes(t)));
   const anoCol   = find('ano','year');
   const mesCol   = find('mes','mês','month');
-  const metaCol  = find('meta','goal','objetivo');
-  const pipeCol  = find('licenciado','pipeline','funil','lic','unidade','franquia');
+  const metaCol  = find('financeira','financial','receita','vendas','faturamento','meta fin') || find('meta','goal','objetivo');
+  const pipeCol  = find('nome','name','licenciado','pipeline','funil','lic','unidade','franquia');
   if (!metaCol) return null;
 
   const parseM = raw => {
