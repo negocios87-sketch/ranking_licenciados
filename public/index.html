@@ -236,7 +236,7 @@ function renderList(page){
     const metaStr= faltam!==null ? (faltam>0 ? 'faltam '+fmt(faltam) : '✓ META BATIDA') : 'sem meta';
     const ph  = listPhotos[d.name];
     const photoEl = ph ? `<img class="rav-photo" src="${ph}" alt="${d.label}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
-    const iniEl   = `<div class="rav-ini ${iniClass(i)}" style="${ph?'display:none':''}}">${initials(d.label)}</div>`;
+    const iniEl   = `<div class="rav-ini ${iniClass(i)}" ${ph ? 'style="display:none"' : ''}>${initials(d.label)}</div>`;
     html += `
     <div class="rank-item">
       <div class="rav-wrap">${photoEl}${iniEl}<div class="rav-pos ${posClass(i)}">${i+1}</div></div>
