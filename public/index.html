@@ -117,8 +117,24 @@ body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;di
 </div>
 
 <script>
-// Troca pelo domínio do seu repo de fotos no GitHub
 const PHOTO_BASE = 'https://raw.githubusercontent.com/negocios87-sketch/fotos_time_comercial/main/';
+const PHOTO_EXTS = ['.png', '.jpg', '.jpeg', '.webp'];
+
+// Testa extensões em sequência, retorna a URL que carregar ou null
+function resolvePhoto(name) {
+  return new Promise(resolve => {
+    let i = 0;
+    function tryNext() {
+      if (i >= PHOTO_EXTS.length) { resolve(null); return; }
+      const url = PHOTO_BASE + encodeURIComponent(name) + PHOTO_EXTS[i++];
+      const img = new Image();
+      img.onload  = () => resolve(url);
+      img.onerror = tryNext;
+      img.src = url;
+    }
+    tryNext();
+  });
+}
 
 const fmt = n => n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0});
 
@@ -131,7 +147,7 @@ function initials(label){
   return label.split(/[\s-]+/).map(w=>w[0]||'').join('').substring(0,3).toUpperCase();
 }
 
-function buildShield(rank, data){
+function buildShield(rank, data, ph){
   const cfgs = {
     1:{ fill:['#2A2208','#1E1A06','#141206'], stroke:['#FFD700','#FFF4A0','#B8860B'], ic:'#FFD700', av:['#3A2E00','#1A1600'], gem:'polygon points="100,7 103,16 112,16 105,22 108,31 100,25 92,31 95,22 88,16 97,16"', gd:4, og:true  },
     2:{ fill:['#252530','#1A1A26','#141420'], stroke:['#C8C8C8','#E0E0E0','#555'],    ic:'#C8C8C8', av:['#1A1A28','#121220'], gem:'polygon points="100,10 108,22 100,30 92,22"',                                          gd:3, og:false },
@@ -139,7 +155,6 @@ function buildShield(rank, data){
   };
   const c = cfgs[rank], uid = `sh${rank}`;
   const ini = initials(data.label);
-  const ph  = PHOTO_BASE + encodeURIComponent(data.label) + '.jpg';
   const sw  = rank===1 ? '2.5':'2';
 
   return `<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -191,22 +206,28 @@ function buildCrown(){
 </svg>`;
 }
 
-function renderRanking(ranking, month){
+async function renderRanking(ranking, month){
   document.getElementById('hPeriod').textContent = labelMes(month);
 
+  // Resolve fotos dos top 3 usando o nome completo do funil (ex: LIC-RIO)
+  const top3 = ranking.slice(0, 3);
+  const photos = await Promise.all(top3.map(d => resolvePhoto(d.name)));
+
   // Pódio: visualmente 2 - 1 - 3
-  const podiumData  = [ranking[1], ranking[0], ranking[2]].filter(Boolean);
+  const podiumData  = [top3[1], top3[0], top3[2]].filter(Boolean);
   const podiumRanks = [2, 1, 3];
+  const podiumPhotos= [photos[1], photos[0], photos[2]];
 
   let podiumHTML = '<div class="podium-stage">';
   podiumData.forEach((d, i) => {
     const rank = podiumRanks[i];
+    const ph   = podiumPhotos[i] || '';
     const pct  = d.meta ? Math.round((d.vendas/d.meta)*100) : null;
     const slotClass = ['','s1','s2','s3'][rank];
     podiumHTML += `
     <div class="slot ${slotClass}" style="animation:fadeUp .7s ease ${.1+rank*.08}s both">
       ${rank===1 ? `<div class="crown-wrap">${buildCrown()}</div>` : ''}
-      <div class="shield-wrap">${buildShield(rank, d)}</div>
+      <div class="shield-wrap">${buildShield(rank, d, ph)}</div>
       <div class="slot-name">${d.label}</div>
       <div class="slot-val">${fmt(d.vendas)}</div>
       <div class="slot-meta">${pct!==null ? pct+'% da meta' : 'sem meta'}</div>
