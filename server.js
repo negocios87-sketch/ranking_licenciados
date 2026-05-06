@@ -78,7 +78,7 @@ function findMeta(rows, pipeName, targetYM) {
   const anoCol   = find('ano','year');
   const mesCol   = find('mes','mês','month');
   const metaCol  = find('meta','goal','objetivo');
-  const pipeCol  = find('licenciado','pipeline','funil','lic');
+  const pipeCol  = find('licenciado','pipeline','funil','lic','unidade','franquia');
   if (!metaCol) return null;
 
   const parseM = raw => {
@@ -91,14 +91,25 @@ function findMeta(rows, pipeName, targetYM) {
   let total = 0, matched = 0;
 
   for (const row of rows) {
-    if (pipeCol && pipeName) {
+    // Filtro por pipeline — se coluna existir, exige match; se não existir, pula a linha
+    if (pipeCol) {
       const rp = (row[pipeCol] || '').toLowerCase().trim();
+      if (!rp) continue; // linha sem pipeline → ignora
       const pn = pipeName.toLowerCase().trim();
-      if (rp && !pn.includes(rp) && !rp.includes(pn.replace('lic-','').trim())) continue;
+      const label = pn.replace(/^lic-\s*/i, '').trim();
+      const matches = rp === pn || rp === label ||
+                      pn.includes(rp) || rp.includes(label) ||
+                      label.includes(rp);
+      if (!matches) continue;
+    } else {
+      continue; // sem coluna de pipeline → não tem como fazer match seguro
     }
+
+    // Filtro por mês/ano
     const ano = anoCol ? parseInt(row[anoCol]) : targetYear;
     const mes = mesCol ? parseM(row[mesCol])   : -1;
     if (mes > 0 && (ano !== targetYear || mes !== targetMonth)) continue;
+
     const raw = (row[metaCol] || '').replace(/[^\d.,]/g,'').replace(',','.');
     const val = parseFloat(raw);
     if (!isNaN(val) && val > 0) { total += val; matched++; }
@@ -150,6 +161,10 @@ app.get('/api/ranking', async (req, res) => {
     }
 
     const ranking = Object.values(rankMap).sort((a, b) => b.vendas - a.vendas);
+
+    // Log de diagnóstico (ver nos logs do Render)
+    console.log(`[ranking] mês: ${month} | deals won: ${deals.filter(d=>d.status==='won').length} | pipelines LIC: ${licPipelines.length}`);
+    ranking.forEach(r => console.log(`  ${r.name}: vendas=${r.vendas} meta=${r.meta}`));
     const payload = { ok: true, month, ranking };
 
     cache = { key: cacheKey, data: payload };
