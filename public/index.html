@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranking — Board Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+html,body{height:100%;margin:0;padding:0;overflow:hidden}
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --gold:#FFD700;--gold3:#fff4a0;
+  --silver:#C8C8C8;--bronze:#CD7F32;
+  --accent:#00E5FF;
+  --bg:#08080E;--bg2:#111118;--bg3:#181824;
+  --text:#F0F0F0;--muted:#555;
+}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;display:flex;flex-direction:column}
+.bg-hex{position:fixed;inset:0;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 2 L54 16 L54 44 L28 58 L2 44 L2 16Z' fill='none' stroke='%2300E5FF' stroke-width='.3' opacity='.12'/%3E%3Cpath d='M28 58 L54 72 L54 100' fill='none' stroke='%2300E5FF' stroke-width='.3' opacity='.12'/%3E%3Cpath d='M28 58 L2 72 L2 100' fill='none' stroke='%2300E5FF' stroke-width='.3' opacity='.12'/%3E%3C/svg%3E");
+  background-size:56px 100px;pointer-events:none}
+.bg-glow{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 60% 60% at 28% 70%,rgba(0,229,255,.05) 0%,transparent 70%),
+             radial-gradient(ellipse 50% 50% at 72% 40%,rgba(255,215,0,.05) 0%,transparent 70%);
+  pointer-events:none}
+#app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;padding:1.8vh 2.5vw 1vh}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2vh;flex-shrink:0}
+.h-left{display:flex;flex-direction:column}
+.h-eyebrow{font-family:'Orbitron',monospace;font-size:clamp(8px,0.85vw,11px);letter-spacing:4px;color:var(--accent);opacity:.7}
+.h-title{font-family:'Bebas Neue';font-size:clamp(2rem,3.8vw,3.8rem);letter-spacing:5px;line-height:1;
+  background:linear-gradient(135deg,#fff 0%,var(--gold) 50%,#fff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.h-right{display:flex;align-items:flex-end;gap:12px}
+.h-period{font-family:'Orbitron',monospace;font-size:clamp(8px,.75vw,10px);letter-spacing:3px;color:var(--muted)}
+.live-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.15);border-radius:99px;padding:5px 16px;font-family:'Orbitron',monospace;font-size:clamp(8px,.75vw,10px);letter-spacing:2px;color:var(--accent)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;flex-shrink:0}
+.divider-h{width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,215,0,.3),rgba(0,229,255,.2),transparent);margin-bottom:1.2vh;flex-shrink:0}
+.main{flex:1;display:grid;grid-template-columns:1fr 38%;gap:3vw;min-height:0}
+.podium-area{display:flex;flex-direction:column;min-height:0}
+.podium-stage{flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding:0 1vw}
+.slot{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;min-height:0}
+.slot.s1{order:2;z-index:3}
+.slot.s2{order:1;z-index:2;padding-bottom:3vh}
+.slot.s3{order:3;z-index:1;padding-bottom:6vh}
+.shield-wrap{width:min(100%,230px);position:relative;margin-bottom:8px;flex-shrink:0}
+.shield-wrap:hover svg{filter:brightness(1.12)}
+.shield-wrap svg{width:100%;height:auto;display:block;transition:filter .3s}
+.crown-wrap{position:absolute;top:-42px;left:50%;transform:translateX(-50%);z-index:5;animation:floatY 3s ease-in-out infinite}
+.crown-wrap svg{filter:drop-shadow(0 0 10px rgba(255,215,0,.8))}
+.slot-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(13px,1.3vw,17px);color:var(--text);text-align:center;line-height:1.2;margin-bottom:3px}
+.slot-val{font-family:'Orbitron',monospace;font-size:clamp(10px,1vw,14px);font-weight:700;letter-spacing:.5px;text-align:center}
+.s1 .slot-val{color:var(--gold)}.s2 .slot-val{color:var(--silver)}.s3 .slot-val{color:var(--bronze)}
+.slot-meta{font-family:'Orbitron',monospace;font-size:clamp(7px,.65vw,9px);color:var(--muted);text-align:center;margin-top:2px}
+.pedestal{width:100%;border-radius:6px 6px 0 0;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pedestal::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(255,255,255,.07),transparent)}
+.s1 .pedestal{height:18vh;background:linear-gradient(180deg,#2A2208,#1A1506);border:1px solid rgba(255,215,0,.2);box-shadow:0 -8px 40px rgba(255,215,0,.15)}
+.s2 .pedestal{height:13vh;background:linear-gradient(180deg,#1C1C24,#121218);border:1px solid rgba(200,200,200,.1)}
+.s3 .pedestal{height:9vh;background:linear-gradient(180deg,#1E1610,#131210);border:1px solid rgba(205,127,50,.12)}
+.pedestal-num{font-family:'Bebas Neue';letter-spacing:2px;position:absolute}
+.s1 .pedestal-num{font-size:5rem;color:var(--gold);opacity:.14}
+.s2 .pedestal-num{font-size:4rem;color:var(--silver);opacity:.08}
+.s3 .pedestal-num{font-size:3rem;color:var(--bronze);opacity:.08}
+.list-area{display:flex;flex-direction:column;min-height:0;justify-content:center}
+.list-eyebrow{font-family:'Orbitron',monospace;font-size:clamp(8px,.8vw,11px);letter-spacing:3px;color:var(--muted);margin-bottom:1.5vh;padding-bottom:1vh;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0}
+.rank-items{display:flex;flex-direction:column;gap:1.2vh;flex:1;justify-content:center}
+.rank-item{display:grid;grid-template-columns:56px 1fr auto;gap:1.2vw;align-items:center;padding:1.8vh 1.4vw;border-radius:14px;background:var(--bg2);border:1px solid rgba(255,255,255,.04);transition:all .25s ease;animation:slideIn .5s ease both}
+.rank-item:hover{background:var(--bg3);border-color:rgba(0,229,255,.12);transform:translateX(5px)}
+.rank-item:nth-child(1){animation-delay:.05s}.rank-item:nth-child(2){animation-delay:.1s}
+.rank-item:nth-child(3){animation-delay:.15s}.rank-item:nth-child(4){animation-delay:.2s}.rank-item:nth-child(5){animation-delay:.25s}
+.rbadge{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-weight:700;font-size:clamp(13px,1.1vw,17px);flex-shrink:0}
+.b1{background:rgba(255,215,0,.1);color:var(--gold);border:1.5px solid rgba(255,215,0,.35)}
+.b2{background:rgba(200,200,200,.08);color:var(--silver);border:1.5px solid rgba(200,200,200,.25)}
+.b3{background:rgba(205,127,50,.1);color:var(--bronze);border:1.5px solid rgba(205,127,50,.3)}
+.bn{background:rgba(255,255,255,.03);color:var(--muted);border:1.5px solid rgba(255,255,255,.06)}
+.rinfo{min-width:0}
+.rname{font-weight:700;font-size:clamp(16px,1.5vw,22px);color:var(--text);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-wrap{display:flex;align-items:center;gap:10px}
+.prog-bar{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;width:0;transition:width 1.3s cubic-bezier(.16,1,.3,1)}
+.fi1{background:linear-gradient(90deg,var(--gold),var(--gold3))}
+.fi2{background:linear-gradient(90deg,var(--silver),#e8e8e8)}
+.fi3{background:linear-gradient(90deg,var(--bronze),#e8a04a)}
+.fin{background:linear-gradient(90deg,var(--accent),rgba(0,229,255,.4))}
+.prog-pct{font-family:'Orbitron',monospace;font-size:clamp(9px,.85vw,12px);color:var(--muted);flex-shrink:0;min-width:38px;text-align:right}
+.rvals{text-align:right;flex-shrink:0}
+.rv-main{font-family:'Orbitron',monospace;font-size:clamp(13px,1.15vw,17px);font-weight:700;color:var(--text);white-space:nowrap}
+.rv-meta{font-family:'Orbitron',monospace;font-size:clamp(9px,.78vw,11px);color:var(--muted);white-space:nowrap;margin-top:4px}
+.loading{display:flex;align-items:center;justify-content:center;flex:1;flex-direction:column;gap:12px}
+.loading-ring{width:48px;height:48px;border:3px solid rgba(0,229,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+.loading-text{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;color:var(--muted)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes floatY{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-7px)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+<div class="bg-hex"></div>
+<div class="bg-glow"></div>
+<div id="app">
+  <div class="header" style="animation:fadeDown .5s ease both">
+    <div class="h-left">
+      <span class="h-eyebrow">Board Academy — Licenciados</span>
+      <span class="h-title">Ranking de Vendas</span>
+    </div>
+    <div class="h-right">
+      <span class="h-period" id="hPeriod">—</span>
+      <div class="live-tag"><span class="dot"></span>AO VIVO</div>
+    </div>
+  </div>
+  <div class="divider-h"></div>
+  <div class="main" id="mainContent">
+    <div class="loading"><div class="loading-ring"></div><div class="loading-text">Carregando...</div></div>
+  </div>
+</div>
+
+<script>
+// Troca pelo domínio do seu repo de fotos no GitHub
+const PHOTO_BASE = 'https://raw.githubusercontent.com/negocios87-sketch/fotos_time_comercial/main/';
+
+const fmt = n => n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0});
+
+function labelMes(ym){
+  const [y,m] = ym.split('-');
+  return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+m-1]+'/'+y.slice(2);
+}
+
+function initials(label){
+  return label.split(/[\s-]+/).map(w=>w[0]||'').join('').substring(0,3).toUpperCase();
+}
+
+function buildShield(rank, data){
+  const cfgs = {
+    1:{ fill:['#2A2208','#1E1A06','#141206'], stroke:['#FFD700','#FFF4A0','#B8860B'], ic:'#FFD700', av:['#3A2E00','#1A1600'], gem:'polygon points="100,7 103,16 112,16 105,22 108,31 100,25 92,31 95,22 88,16 97,16"', gd:4, og:true  },
+    2:{ fill:['#252530','#1A1A26','#141420'], stroke:['#C8C8C8','#E0E0E0','#555'],    ic:'#C8C8C8', av:['#1A1A28','#121220'], gem:'polygon points="100,10 108,22 100,30 92,22"',                                          gd:3, og:false },
+    3:{ fill:['#221A0E','#1A1410','#141210'], stroke:['#CD7F32','#E8A04A','#5A3800'], ic:'#CD7F32', av:['#1C1410','#141010'], gem:'polygon points="100,10 106,20 100,27 94,20"',                                         gd:3, og:false },
+  };
+  const c = cfgs[rank], uid = `sh${rank}`;
+  const ini = initials(data.label);
+  const ph  = PHOTO_BASE + encodeURIComponent(data.label) + '.jpg';
+  const sw  = rank===1 ? '2.5':'2';
+
+  return `<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="${uid}f" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${c.fill[0]}"/>
+      <stop offset="50%" stop-color="${c.fill[1]}"/>
+      <stop offset="100%" stop-color="${c.fill[2]}"/>
+    </linearGradient>
+    <linearGradient id="${uid}s" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="${c.stroke[0]}" stop-opacity=".95"/>
+      <stop offset="50%" stop-color="${c.stroke[1]}" stop-opacity=".8"/>
+      <stop offset="100%" stop-color="${c.stroke[2]}" stop-opacity=".4"/>
+    </linearGradient>
+    <linearGradient id="${uid}a" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${c.av[0]}"/>
+      <stop offset="100%" stop-color="${c.av[1]}"/>
+    </linearGradient>
+    <clipPath id="${uid}cp"><circle cx="100" cy="105" r="44"/></clipPath>
+    <filter id="${uid}g"><feGaussianBlur stdDeviation="${c.gd}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    ${c.og?`<filter id="${uid}gs"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`:''}
+  </defs>
+  ${c.og?`<path d="M100 8 L190 40 L190 130 Q190 200 100 232 Q10 200 10 130 L10 40 Z" fill="rgba(255,215,0,.07)" filter="url(#${uid}gs)"/>`:''}
+  <path d="M100 8 L190 40 L190 130 Q190 200 100 232 Q10 200 10 130 L10 40 Z" fill="url(#${uid}f)" stroke="url(#${uid}s)" stroke-width="${sw}"/>
+  <path d="M100 20 L178 48 L178 128 Q178 190 100 218 Q22 190 22 128 L22 48 Z" fill="none" stroke="${c.stroke[0]}" stroke-opacity=".12" stroke-width="1"/>
+  <text x="100" y="100" text-anchor="middle" dominant-baseline="middle" font-family="Bebas Neue" font-size="80" fill="${c.stroke[0]}" fill-opacity=".06">${rank}</text>
+  <circle cx="100" cy="105" r="48" fill="none" stroke="url(#${uid}s)" stroke-width="${sw}"/>
+  <circle cx="100" cy="105" r="44" fill="url(#${uid}a)"/>
+  <text id="${uid}ini" x="100" y="113" text-anchor="middle" dominant-baseline="middle" font-family="Bebas Neue" font-size="${ini.length>2?22:26}" fill="${c.ic}" letter-spacing="1" filter="url(#${uid}g)">${ini}</text>
+  <image href="${ph}" x="56" y="61" width="88" height="88" clip-path="url(#${uid}cp)" preserveAspectRatio="xMidYMid slice"
+    onload="document.getElementById('${uid}ini').style.display='none'"
+    onerror="this.style.display='none'"/>
+  <${c.gem} fill="${c.stroke[0]}" opacity="${rank===1?'1':'.5'}" filter="url(#${uid}g)"/>
+  ${rank===1?`<line x1="12" y1="42" x2="22" y2="50" stroke="${c.stroke[0]}" stroke-opacity=".3" stroke-width="1"/>
+  <line x1="188" y1="42" x2="178" y2="50" stroke="${c.stroke[0]}" stroke-opacity=".3" stroke-width="1"/>`:''}
+</svg>`;
+}
+
+function buildCrown(){
+  return `<svg width="54" height="40" viewBox="0 0 54 40" xmlns="http://www.w3.org/2000/svg">
+  <defs><linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#FFE566"/><stop offset="50%" stop-color="#FFD700"/><stop offset="100%" stop-color="#B8860B"/>
+  </linearGradient></defs>
+  <path d="M5 31 L9 11 L20 23 L27 5 L34 23 L45 11 L49 31 Z" fill="url(#cg)" stroke="#B8860B" stroke-width="1"/>
+  <rect x="5" y="31" width="44" height="7" rx="2" fill="url(#cg)" stroke="#B8860B" stroke-width="1"/>
+  <circle cx="27" cy="6" r="3.5" fill="#fff" opacity=".85"/>
+  <circle cx="9" cy="12" r="3" fill="#fff" opacity=".7"/>
+  <circle cx="45" cy="12" r="3" fill="#fff" opacity=".7"/>
+</svg>`;
+}
+
+function renderRanking(ranking, month){
+  document.getElementById('hPeriod').textContent = labelMes(month);
+
+  // Pódio: visualmente 2 - 1 - 3
+  const podiumData  = [ranking[1], ranking[0], ranking[2]].filter(Boolean);
+  const podiumRanks = [2, 1, 3];
+
+  let podiumHTML = '<div class="podium-stage">';
+  podiumData.forEach((d, i) => {
+    const rank = podiumRanks[i];
+    const pct  = d.meta ? Math.round((d.vendas/d.meta)*100) : null;
+    const slotClass = ['','s1','s2','s3'][rank];
+    podiumHTML += `
+    <div class="slot ${slotClass}" style="animation:fadeUp .7s ease ${.1+rank*.08}s both">
+      ${rank===1 ? `<div class="crown-wrap">${buildCrown()}</div>` : ''}
+      <div class="shield-wrap">${buildShield(rank, d)}</div>
+      <div class="slot-name">${d.label}</div>
+      <div class="slot-val">${fmt(d.vendas)}</div>
+      <div class="slot-meta">${pct!==null ? pct+'% da meta' : 'sem meta'}</div>
+      <div class="pedestal"><span class="pedestal-num">${rank}</span></div>
+    </div>`;
+  });
+  podiumHTML += '</div>';
+
+  // Lista top 5
+  const top5 = ranking.slice(0,5);
+  let listHTML = `<div class="list-area" style="animation:fadeUp .7s ease .3s both">
+    <div class="list-eyebrow">Classificação Completa</div>
+    <div class="rank-items">`;
+
+  top5.forEach((d,i) => {
+    const bc     = i===0?'b1':i===1?'b2':i===2?'b3':'bn';
+    const fc     = i===0?'fi1':i===1?'fi2':i===2?'fi3':'fin';
+    const pct    = d.meta ? Math.round((d.vendas/d.meta)*100) : null;
+    const faltam = d.meta ? d.meta - d.vendas : null;
+    const metaStr= faltam!==null ? (faltam>0 ? 'faltam '+fmt(faltam) : '✓ META BATIDA') : 'sem meta';
+    listHTML += `
+    <div class="rank-item">
+      <div class="rbadge ${bc}">${i+1}</div>
+      <div class="rinfo">
+        <div class="rname">${d.label}</div>
+        <div class="prog-wrap">
+          <div class="prog-bar"><div class="prog-fill ${fc}" data-pct="${pct!==null?Math.min(pct,100):0}"></div></div>
+          <span class="prog-pct">${pct!==null?pct+'%':'—'}</span>
+        </div>
+      </div>
+      <div class="rvals">
+        <div class="rv-main">${fmt(d.vendas)}</div>
+        <div class="rv-meta">${metaStr}</div>
+      </div>
+    </div>`;
+  });
+  listHTML += '</div></div>';
+
+  document.getElementById('mainContent').innerHTML =
+    `<div class="podium-area" style="animation:fadeUp .6s ease .1s both">${podiumHTML}</div>${listHTML}`;
+
+  setTimeout(()=>{
+    document.querySelectorAll('.prog-fill').forEach(el => el.style.width = el.dataset.pct+'%');
+  }, 400);
+}
+
+async function loadRanking(){
+  try {
+    const res  = await fetch('/api/ranking');
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error);
+    renderRanking(json.ranking, json.month);
+  } catch(e){
+    document.getElementById('mainContent').innerHTML =
+      `<div class="loading"><div class="loading-text" style="color:#ff6060">Erro: ${e.message}</div></div>`;
+  }
+}
+
+loadRanking();
+
+// Auto-refresh a cada 5 minutos
+setInterval(loadRanking, 5 * 60 * 1000);
+</script>
+</body>
+</html>
