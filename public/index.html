@@ -128,6 +128,19 @@ body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;di
 </div>
 
 <script>
+const NAMES = {
+  'LIC-BC':  'Balneário Camboriú',
+  'LIC-BEL': 'Belém',
+  'LIC-BH':  'Belo Horizonte',
+  'LIC-BSB': 'Brasília',
+  'LIC-CWB': 'Curitiba',
+  'LIC-REC': 'Recife',
+  'LIC-RIO': 'Rio de Janeiro',
+  'LIC-SAL': 'Salvador',
+  'LIC-SJC': 'São José dos Campos',
+};
+function displayName(d){ return NAMES[d.name] || displayName(d); }
+
 const PHOTO_BASE = 'https://raw.githubusercontent.com/negocios87-sketch/fotos_time_comercial/main/';
 const PHOTO_EXTS = ['.png', '.jpg', '.jpeg', '.webp'];
 
@@ -165,7 +178,7 @@ function buildShield(rank, data, ph){
     3:{ fill:['#221A0E','#1A1410','#141210'], stroke:['#CD7F32','#E8A04A','#5A3800'], ic:'#CD7F32', av:['#1C1410','#141010'], gem:'polygon points="100,10 106,20 100,27 94,20"',                                         gd:3, og:false },
   };
   const c = cfgs[rank], uid = `sh${rank}`;
-  const ini = initials(data.label);
+  const ini = initials(NAMES[data.name] || data.label);
   const sw  = rank===1 ? '2.5':'2';
 
   return `<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -235,13 +248,13 @@ function renderList(page){
     const faltam = d.meta ? d.meta - d.vendas : null;
     const metaStr= faltam!==null ? (faltam>0 ? 'faltam '+fmt(faltam) : '✓ META BATIDA') : 'sem meta';
     const ph  = listPhotos[d.name];
-    const photoEl = ph ? `<img class="rav-photo" src="${ph}" alt="${d.label}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
-    const iniEl   = `<div class="rav-ini ${iniClass(i)}" ${ph ? 'style="display:none"' : ''}>${initials(d.label)}</div>`;
+    const photoEl = ph ? `<img class="rav-photo" src="${ph}" alt="${displayName(d)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+    const iniEl   = `<div class="rav-ini ${iniClass(i)}" ${ph ? 'style="display:none"' : ''}>${initials(displayName(d))}</div>`;
     html += `
     <div class="rank-item">
       <div class="rav-wrap">${photoEl}${iniEl}<div class="rav-pos ${posClass(i)}">${i+1}</div></div>
       <div class="rinfo">
-        <div class="rname">${d.label}</div>
+        <div class="rname">${displayName(d)}</div>
         <div class="prog-wrap">
           <div class="prog-bar"><div class="prog-fill ${fillClass(i)}" data-pct="${pct!==null?Math.min(pct,100):0}"></div></div>
           <span class="prog-pct">${pct!==null?pct+'%':'—'}</span>
@@ -289,7 +302,7 @@ async function renderRanking(ranking, month){
     <div class="slot s${rank}" style="animation:fadeUp .7s ease ${.1+rank*.08}s both">
       ${rank===1 ? `<div class="crown-wrap">${buildCrown()}</div>` : ''}
       <div class="shield-wrap">${buildShield(rank, d, podiumPh[i]||'')}</div>
-      <div class="slot-name">${d.label}</div>
+      <div class="slot-name">${displayName(d)}</div>
       <div class="slot-val">${fmt(d.vendas)}</div>
       <div class="slot-meta">${pct!==null?pct+'% da meta':'sem meta'}</div>
       <div class="pedestal"><span class="pedestal-num">${rank}</span></div>
