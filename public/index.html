@@ -63,15 +63,26 @@ body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;di
 .list-area{display:flex;flex-direction:column;min-height:0;justify-content:center}
 .list-eyebrow{font-family:'Orbitron',monospace;font-size:clamp(8px,.8vw,11px);letter-spacing:3px;color:var(--muted);margin-bottom:1.5vh;padding-bottom:1vh;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0}
 .rank-items{display:flex;flex-direction:column;gap:1.2vh;flex:1;justify-content:center}
-.rank-item{display:grid;grid-template-columns:56px 1fr auto;gap:1.2vw;align-items:center;padding:1.8vh 1.4vw;border-radius:14px;background:var(--bg2);border:1px solid rgba(255,255,255,.04);transition:all .25s ease;animation:slideIn .5s ease both}
+.rank-item{display:grid;grid-template-columns:auto 1fr auto;gap:1.2vw;align-items:center;padding:1.4vh 1.4vw;border-radius:14px;background:var(--bg2);border:1px solid rgba(255,255,255,.04);transition:all .25s ease;animation:slideIn .5s ease both}
 .rank-item:hover{background:var(--bg3);border-color:rgba(0,229,255,.12);transform:translateX(5px)}
 .rank-item:nth-child(1){animation-delay:.05s}.rank-item:nth-child(2){animation-delay:.1s}
 .rank-item:nth-child(3){animation-delay:.15s}.rank-item:nth-child(4){animation-delay:.2s}.rank-item:nth-child(5){animation-delay:.25s}
-.rbadge{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-weight:700;font-size:clamp(13px,1.1vw,17px);flex-shrink:0}
-.b1{background:rgba(255,215,0,.1);color:var(--gold);border:1.5px solid rgba(255,215,0,.35)}
-.b2{background:rgba(200,200,200,.08);color:var(--silver);border:1.5px solid rgba(200,200,200,.25)}
-.b3{background:rgba(205,127,50,.1);color:var(--bronze);border:1.5px solid rgba(205,127,50,.3)}
-.bn{background:rgba(255,255,255,.03);color:var(--muted);border:1.5px solid rgba(255,255,255,.06)}
+/* avatar + badge */
+.rav-wrap{position:relative;width:48px;height:48px;flex-shrink:0}
+.rav-photo{width:48px;height:48px;border-radius:50%;object-fit:cover;display:block}
+.rav-ini{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:17px;letter-spacing:1px}
+.b1 .rav-ini,.rav-ini.b1c{background:rgba(255,215,0,.12);color:var(--gold);border:1.5px solid rgba(255,215,0,.3)}
+.b2 .rav-ini,.rav-ini.b2c{background:rgba(200,200,200,.08);color:var(--silver);border:1.5px solid rgba(200,200,200,.2)}
+.b3 .rav-ini,.rav-ini.b3c{background:rgba(205,127,50,.1);color:var(--bronze);border:1.5px solid rgba(205,127,50,.25)}
+.rav-ini.bnc{background:rgba(255,255,255,.03);color:var(--muted);border:1.5px solid rgba(255,255,255,.06)}
+.rav-pos{position:absolute;bottom:-3px;right:-4px;width:20px;height:20px;border-radius:50%;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg2)}
+.pos1{background:var(--gold);color:#1a1200}.pos2{background:var(--silver);color:#111}.pos3{background:var(--bronze);color:#1a0e00}.posn{background:var(--bg3);color:var(--muted)}
+/* paginação */
+.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:1.2vh;flex-shrink:0;padding:0 2px}
+.pag-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:var(--text);font-size:16px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;user-select:none}
+.pag-btn:hover:not(:disabled){background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.2);color:var(--accent)}
+.pag-btn:disabled{opacity:.2;cursor:default}
+.pag-info{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--muted)}
 .rinfo{min-width:0}
 .rname{font-weight:700;font-size:clamp(16px,1.5vw,22px);color:var(--text);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .prog-wrap{display:flex;align-items:center;gap:10px}
@@ -206,55 +217,33 @@ function buildCrown(){
 </svg>`;
 }
 
-async function renderRanking(ranking, month){
-  document.getElementById('hPeriod').textContent = labelMes(month);
+let ALL_RANKING = [], currentPage = 0, listPhotos = {};
+const PAGE_SIZE = 5;
+function posClass(i){ return i===0?'pos1':i===1?'pos2':i===2?'pos3':'posn'; }
+function iniClass(i){ return i===0?'b1c':i===1?'b2c':i===2?'b3c':'bnc'; }
+function fillClass(i){ return i===0?'fi1':i===1?'fi2':i===2?'fi3':'fin'; }
 
-  // Resolve fotos dos top 3 usando o nome completo do funil (ex: LIC-RIO)
-  const top3 = ranking.slice(0, 3);
-  const photos = await Promise.all(top3.map(d => resolvePhoto(d.name)));
-
-  // Pódio: visualmente 2 - 1 - 3
-  const podiumData  = [top3[1], top3[0], top3[2]].filter(Boolean);
-  const podiumRanks = [2, 1, 3];
-  const podiumPhotos= [photos[1], photos[0], photos[2]];
-
-  let podiumHTML = '<div class="podium-stage">';
-  podiumData.forEach((d, i) => {
-    const rank = podiumRanks[i];
-    const ph   = podiumPhotos[i] || '';
-    const pct  = d.meta ? Math.round((d.vendas/d.meta)*100) : null;
-    const slotClass = ['','s1','s2','s3'][rank];
-    podiumHTML += `
-    <div class="slot ${slotClass}" style="animation:fadeUp .7s ease ${.1+rank*.08}s both">
-      ${rank===1 ? `<div class="crown-wrap">${buildCrown()}</div>` : ''}
-      <div class="shield-wrap">${buildShield(rank, d, ph)}</div>
-      <div class="slot-name">${d.label}</div>
-      <div class="slot-val">${fmt(d.vendas)}</div>
-      <div class="slot-meta">${pct!==null ? pct+'% da meta' : 'sem meta'}</div>
-      <div class="pedestal"><span class="pedestal-num">${rank}</span></div>
-    </div>`;
-  });
-  podiumHTML += '</div>';
-
-  // Lista top 5
-  const top5 = ranking.slice(0,5);
-  let listHTML = `<div class="list-area" style="animation:fadeUp .7s ease .3s both">
-    <div class="list-eyebrow">Classificação Completa</div>
-    <div class="rank-items">`;
-
-  top5.forEach((d,i) => {
-    const bc     = i===0?'b1':i===1?'b2':i===2?'b3':'bn';
-    const fc     = i===0?'fi1':i===1?'fi2':i===2?'fi3':'fin';
-    const pct    = d.meta ? Math.round((d.vendas/d.meta)*100) : null;
+function renderList(page){
+  currentPage = page;
+  const pages = Math.ceil(ALL_RANKING.length / PAGE_SIZE);
+  const slice = ALL_RANKING.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  const offset= page * PAGE_SIZE;
+  let html = '<div class="rank-items">';
+  slice.forEach((d, si) => {
+    const i   = offset + si;
+    const pct = d.meta ? Math.round((d.vendas/d.meta)*100) : null;
     const faltam = d.meta ? d.meta - d.vendas : null;
     const metaStr= faltam!==null ? (faltam>0 ? 'faltam '+fmt(faltam) : '✓ META BATIDA') : 'sem meta';
-    listHTML += `
+    const ph  = listPhotos[d.name];
+    const photoEl = ph ? `<img class="rav-photo" src="${ph}" alt="${d.label}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+    const iniEl   = `<div class="rav-ini ${iniClass(i)}" style="${ph?'display:none':''}}">${initials(d.label)}</div>`;
+    html += `
     <div class="rank-item">
-      <div class="rbadge ${bc}">${i+1}</div>
+      <div class="rav-wrap">${photoEl}${iniEl}<div class="rav-pos ${posClass(i)}">${i+1}</div></div>
       <div class="rinfo">
         <div class="rname">${d.label}</div>
         <div class="prog-wrap">
-          <div class="prog-bar"><div class="prog-fill ${fc}" data-pct="${pct!==null?Math.min(pct,100):0}"></div></div>
+          <div class="prog-bar"><div class="prog-fill ${fillClass(i)}" data-pct="${pct!==null?Math.min(pct,100):0}"></div></div>
           <span class="prog-pct">${pct!==null?pct+'%':'—'}</span>
         </div>
       </div>
@@ -264,14 +253,58 @@ async function renderRanking(ranking, month){
       </div>
     </div>`;
   });
-  listHTML += '</div></div>';
+  html += `</div>
+  <div class="pagination">
+    <button class="pag-btn" onclick="renderList(${page-1})" ${page===0?'disabled':''}>‹</button>
+    <span class="pag-info">${page+1} / ${pages}</span>
+    <button class="pag-btn" onclick="renderList(${page+1})" ${page>=pages-1?'disabled':''}>›</button>
+  </div>`;
+  document.getElementById('listContainer').innerHTML = html;
+  setTimeout(()=>{ document.querySelectorAll('.prog-fill').forEach(el=>el.style.width=el.dataset.pct+'%'); }, 80);
+}
+
+async function renderRanking(ranking, month){
+  ALL_RANKING = ranking; currentPage = 0; listPhotos = {};
+  document.getElementById('hPeriod').textContent = labelMes(month);
+
+  // Fotos top 3 para o pódio
+  const top3 = ranking.slice(0,3);
+  const podiumPhotos = await Promise.all(top3.map(d => resolvePhoto(d.name)));
+
+  // Fotos todos em paralelo para a lista (não bloqueia)
+  Promise.all(ranking.map(d => resolvePhoto(d.name))).then(photos => {
+    ranking.forEach((d,i) => { listPhotos[d.name] = photos[i]; });
+    renderList(currentPage);
+  });
+
+  // Pódio
+  const podiumData  = [top3[1], top3[0], top3[2]].filter(Boolean);
+  const podiumRanks = [2, 1, 3];
+  const podiumPh    = [podiumPhotos[1], podiumPhotos[0], podiumPhotos[2]];
+  let podiumHTML = '<div class="podium-stage">';
+  podiumData.forEach((d, i) => {
+    const rank = podiumRanks[i];
+    const pct  = d.meta ? Math.round((d.vendas/d.meta)*100) : null;
+    podiumHTML += `
+    <div class="slot s${rank}" style="animation:fadeUp .7s ease ${.1+rank*.08}s both">
+      ${rank===1 ? `<div class="crown-wrap">${buildCrown()}</div>` : ''}
+      <div class="shield-wrap">${buildShield(rank, d, podiumPh[i]||'')}</div>
+      <div class="slot-name">${d.label}</div>
+      <div class="slot-val">${fmt(d.vendas)}</div>
+      <div class="slot-meta">${pct!==null?pct+'% da meta':'sem meta'}</div>
+      <div class="pedestal"><span class="pedestal-num">${rank}</span></div>
+    </div>`;
+  });
+  podiumHTML += '</div>';
 
   document.getElementById('mainContent').innerHTML =
-    `<div class="podium-area" style="animation:fadeUp .6s ease .1s both">${podiumHTML}</div>${listHTML}`;
+    `<div class="podium-area" style="animation:fadeUp .6s ease .1s both">${podiumHTML}</div>
+     <div class="list-area" style="animation:fadeUp .7s ease .3s both">
+       <div class="list-eyebrow">Classificação Completa</div>
+       <div id="listContainer"></div>
+     </div>`;
 
-  setTimeout(()=>{
-    document.querySelectorAll('.prog-fill').forEach(el => el.style.width = el.dataset.pct+'%');
-  }, 400);
+  renderList(0);
 }
 
 async function loadRanking(){
