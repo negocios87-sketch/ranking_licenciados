@@ -181,14 +181,18 @@ app.get('/api/ranking', async (req, res) => {
 
     const licPipelines = pipelines.filter(p => p.name.toUpperCase().startsWith('LIC-'));
 
+    const metaMap = parseMetaSheet(metaRows, month);
+
     const rankMap = {};
     for (const p of licPipelines) {
+      const meta = matchPipeline(p.name, metaMap);
+      if (meta === null) continue; // não está na planilha de metas → fora do ranking
       rankMap[p.id] = {
         id:     p.id,
         name:   p.name,
         label:  p.name.replace(/^LIC-\s*/i, '').trim(),
         vendas: 0,
-        meta:   findMeta(metaRows, p.name, month)
+        meta,
       };
     }
 
@@ -200,9 +204,7 @@ app.get('/api/ranking', async (req, res) => {
       rankMap[pipeId].vendas += parseFloat(deal.value || 0);
     }
 
-    const ranking = Object.values(rankMap)
-      .filter(r => r.meta !== null)          // só quem está na planilha de metas
-      .sort((a, b) => b.vendas - a.vendas);
+    const ranking = Object.values(rankMap).sort((a, b) => b.vendas - a.vendas);
 
     // Log de diagnóstico (ver nos logs do Render)
     console.log(`[ranking] mês: ${month} | deals won: ${deals.filter(d=>d.status==='won').length} | pipelines LIC: ${licPipelines.length}`);
