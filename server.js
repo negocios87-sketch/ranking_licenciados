@@ -121,6 +121,28 @@ function findMeta(rows, pipeName, targetYM) {
 let cache = null, cachedAt = 0;
 const CACHE_TTL = 5 * 60 * 1000;
 
+// ── GET /api/debug-meta (remover depois de resolver) ─────────
+app.get('/api/debug-meta', async (req, res) => {
+  try {
+    const rows = await fetchCSV(META_CSV_URL);
+    if (!rows.length) return res.json({ ok: false, error: 'CSV vazio ou URL inválida' });
+    const keys = Object.keys(rows[0]);
+    const find = (...terms) => keys.find(k => terms.some(t => k.toLowerCase().includes(t)));
+    res.json({
+      ok: true,
+      totalLinhas: rows.length,
+      colunas: keys,
+      colunaDetectadaNome: find('nome','name','licenciado','pipeline','funil','lic','unidade','franquia'),
+      colunaDetectadaMeta: find('financeira','financial','receita','vendas','faturamento','meta fin') || find('meta','goal','objetivo'),
+      colunaDetectadaMes:  find('mes','mês','month'),
+      colunaDetectadaAno:  find('ano','year'),
+      primeiras5Linhas: rows.slice(0, 5),
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // ── GET /api/ranking ─────────────────────────────────────────
 app.get('/api/ranking', async (req, res) => {
   if (!API_TOKEN) return res.status(500).json({ ok: false, error: 'PIPEDRIVE_TOKEN não configurado.' });
