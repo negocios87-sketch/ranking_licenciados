@@ -67,19 +67,34 @@ async function fetchCSV(url) {
   });
 }
 
-// ── Meta matching ────────────────────────────────────────────
+// ── Meta: extrai nome normalizado da planilha ────────────────
 const PT_MONTHS = ['janeiro','fevereiro','março','abril','maio','junho','julho',
                    'agosto','setembro','outubro','novembro','dezembro'];
 
-function findMeta(rows, pipeName, targetYM) {
-  if (!rows?.length) return null;
-  const keys     = Object.keys(rows[0]);
-  const find     = (...terms) => keys.find(k => terms.some(t => k.toLowerCase().includes(t)));
-  const anoCol   = find('ano','year');
-  const mesCol   = find('mes','mês','month');
-  const metaCol  = find('financeira','financial','receita','vendas','faturamento','meta fin') || find('meta','goal','objetivo');
-  const pipeCol  = find('nome','name','licenciado','pipeline','funil','lic','unidade','franquia');
-  if (!metaCol) return null;
+function normalizeName(s) {
+  return (s || '').toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+function parseMetaSheet(rows, targetYM) {
+  // Retorna Map: nomePlanilha(normalizado) → valorMeta
+  const result = new Map();
+  if (!rows?.length) return result;
+
+  const keys    = Object.keys(rows[0]);
+  const find    = (...terms) => keys.find(k => terms.some(t => k.toLowerCase().includes(t)));
+  const anoCol  = find('ano','year');
+  const mesCol  = find('mes','mês','month');
+  const metaCol = find('financeira','financial') || find('meta','goal','objetivo');
+  const nomeCol = find('nome','name','licenciado','pipeline','funil','lic','unidade','franquia');
+
+  if (!metaCol || !nomeCol) {
+    console.warn('[meta] colunas não encontradas. keys:', keys);
+    return result;
+  }
+
+  console.log(`[meta] cols → nome:${nomeCol} meta:${metaCol} mes:${mesCol} ano:${anoCol}`);
+
+  const [targetYear, targetMonth] = targetYM.split('-').map(Number);
 
   const parseM = raw => {
     const n = parseInt(raw); if (!isNaN(n)) return n;
@@ -87,34 +102,37 @@ function findMeta(rows, pipeName, targetYM) {
     return i >= 0 ? i + 1 : -1;
   };
 
-  const [targetYear, targetMonth] = targetYM.split('-').map(Number);
-  let total = 0, matched = 0;
-
   for (const row of rows) {
-    // Filtro por pipeline — se coluna existir, exige match; se não existir, pula a linha
-    if (pipeCol) {
-      const rp = (row[pipeCol] || '').toLowerCase().trim();
-      if (!rp) continue; // linha sem pipeline → ignora
-      const pn = pipeName.toLowerCase().trim();
-      const label = pn.replace(/^lic-\s*/i, '').trim();
-      const matches = rp === pn || rp === label ||
-                      pn.includes(rp) || rp.includes(label) ||
-                      label.includes(rp);
-      if (!matches) continue;
-    } else {
-      continue; // sem coluna de pipeline → não tem como fazer match seguro
-    }
+    const nomeBruto = row[nomeCol] || '';
+    if (!nomeBruto.trim()) continue;
 
-    // Filtro por mês/ano
+    // Filtro mês/ano
     const ano = anoCol ? parseInt(row[anoCol]) : targetYear;
-    const mes = mesCol ? parseM(row[mesCol])   : -1;
-    if (mes > 0 && (ano !== targetYear || mes !== targetMonth)) continue;
+    const mes = mesCol ? parseM(row[mesCol])   : targetMonth;
+    if (ano !== targetYear || mes !== targetMonth) continue;
 
     const raw = (row[metaCol] || '').replace(/[^\d.,]/g,'').replace(',','.');
     const val = parseFloat(raw);
-    if (!isNaN(val) && val > 0) { total += val; matched++; }
+    if (!isNaN(val) && val > 0) {
+      result.set(normalizeName(nomeBruto), val);
+    }
   }
-  return matched > 0 ? total : null;
+
+  console.log(`[meta] ${result.size} entradas para ${targetYM}:`, [...result.keys()]);
+  return result;
+}
+
+function matchPipeline(pipeName, metaMap) {
+  const pn = normalizeName(pipeName); // ex: "lic-cwb"
+  // Match exato
+  if (metaMap.has(pn)) return metaMap.get(pn);
+  // Tenta sem prefixo "lic-"
+  const sem = pn.replace(/^lic-\s*/, '');
+  for (const [k, v] of metaMap) {
+    const ksem = k.replace(/^lic-\s*/, '');
+    if (k === pn || ksem === sem || ksem === pn || k === sem) return v;
+  }
+  return null;
 }
 
 // ── Cache simples (5 min) ─────────────────────────────────────
@@ -182,7 +200,9 @@ app.get('/api/ranking', async (req, res) => {
       rankMap[pipeId].vendas += parseFloat(deal.value || 0);
     }
 
-    const ranking = Object.values(rankMap).sort((a, b) => b.vendas - a.vendas);
+    const ranking = Object.values(rankMap)
+      .filter(r => r.meta !== null)          // só quem está na planilha de metas
+      .sort((a, b) => b.vendas - a.vendas);
 
     // Log de diagnóstico (ver nos logs do Render)
     console.log(`[ranking] mês: ${month} | deals won: ${deals.filter(d=>d.status==='won').length} | pipelines LIC: ${licPipelines.length}`);
